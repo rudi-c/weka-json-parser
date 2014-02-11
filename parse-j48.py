@@ -17,6 +17,11 @@
 # outlook = rainy
 # |   windy = TRUE: no (2.0)
 # |   windy = FALSE: yes (3.0)
+# outlook = custom
+# |   humidity = '(-inf-0.0]': no (4.0)
+# |   humidity = '(0.0-5.0]': yes (1.0)
+# |   humidity = '(5.0-inf)': no (2.0)
+
 
 # Sample output :
 # ["outlook", 
@@ -26,7 +31,12 @@
 #   ["=", "overcast", "yes"], 
 #   ["=", "rainy", ["windy", 
 #                       [["=", "TRUE", "no"], 
-#                       ["=", "FALSE", "yes"]]]]]]
+#                       ["=", "FALSE", "yes"]]]], 
+#   ["=", "custom", ["humidity", 
+#                       [["=", [-Infinity, -0.0], "no"], 
+#                       ["=", [0.0, 5.0], "yes"], 
+#                       ["=", [5.0, Infinity], "no"]]]]]]
+
 
 # The output is printed to screen - use output redirection to save to file.
 
@@ -39,6 +49,32 @@ re_head = re.compile("J48 (un)?pruned tree")
 re_divider_line = re.compile("^-*\n$")
 re_blank_line = re.compile("^[ \t\n]*$")
 re_splitter = re.compile("[ :]")
+re_range = re.compile(
+    "^'\(" \
+    "(-inf|[0-9]+(\.[0-9]+)?)" \
+    "-" \
+    "([0-9]+(\.[0-9]+)?\]|inf\))" \
+    "'$")
+
+def parse_value(token):
+    """Returns an float if the token represents a number, a range if the token
+    represents a range of numbers, otherwise return the token as is."""
+    try:
+        return float(token)
+    except ValueError:
+        # Look for ranges of the form '(start-end]', ' included
+        if re_range.match(token):
+            relevant_range = token[2:-2]
+            # -inf case, can't use split on "-"
+            if relevant_range.startswith("-inf"):
+                return (float("-inf"), parse_value(relevant_range[4:]))
+            else:
+                parts = relevant_range.split("-")
+                return (parse_value(parts[0]), parse_value(parts[1]))
+        else:
+            # Not a number or range - so it must be nominal, leave it as it.
+            return token
+
 
 def parse_line(line):
     """Split the line into a tuple
@@ -51,7 +87,8 @@ def parse_line(line):
             depth += 1 
         else:
             break
-    return (depth, split[depth], split[depth + 1], split[depth + 2],
+    return (depth, split[depth], split[depth + 1], 
+            parse_value(split[depth + 2]),
             split[depth + 3] if len(split) > depth + 3 else None)
 
 
@@ -71,10 +108,9 @@ def parse_tree(lines):
                 if node_feature is None:
                     node_feature = feature
                 elif node_feature != feature:
-                    print "Error : Feature mismatch - expected %s but got :" \
-                          % node_feature
-                    print line
-                    sys.exit(1)
+                    raise Exception("Error : Feature mismatch - expected %s" \
+                        "but got : \n%s" \
+                          % (node_feature, line))
 
                 # Another branch
                 current_index[0] += 1
@@ -84,9 +120,9 @@ def parse_tree(lines):
                 else:
                     children.append((comparator, value, classif))
             else:
-                print "Error : Input jumps two levels at once."
-                print line
-                sys.exit(1)
+                raise Exception("Error : Input jumps two levels at once\n%s." \
+                                % line)
+
         return (node_feature, children)
 
     return parse(0)
@@ -106,8 +142,7 @@ def get_tree_lines(lines):
                 else:
                     tree_lines.append(l[:-1]) # remove newline at the end
 
-    print "Error : Failed to find tree in input."
-    sys.exit(1)
+    raise Exception("Error : Failed to find tree in input.")
 
 
 def main(argv):
@@ -130,7 +165,7 @@ def main(argv):
 
     tree_lines = get_tree_lines(lines)
     tree = parse_tree(tree_lines)
-    json.dumps(tree)
+    print json.dumps(tree)
 
 
 main(sys.argv[1:])
