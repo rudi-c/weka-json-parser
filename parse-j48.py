@@ -1,6 +1,34 @@
 #!/usr/bin/python
 # Parses the output of weka.classifiers.trees.J48
+# Made by Rudi Chen (Advecticity), 2014
+#
+# Usage : ./parse-j48.py [input_filename]
+# If no input file is given, the input will be read from stdin.
+#
+# Sample input :
 
+# J48 pruned tree
+# ------------------
+ 
+# outlook = sunny
+# |   humidity <= 75: yes (2.0)
+# |   humidity > 75: no (3.0)
+# outlook = overcast: yes (4.0)
+# outlook = rainy
+# |   windy = TRUE: no (2.0)
+# |   windy = FALSE: yes (3.0)
+
+# Sample output :
+# ["outlook", 
+#   [["=", "sunny", ["humidity", 
+#                       [["<=", "75", "yes"], 
+#                       [">", "75", "no"]]]], 
+#   ["=", "overcast", "yes"], 
+#   ["=", "rainy", ["windy", 
+#                       [["=", "TRUE", "no"], 
+#                       ["=", "FALSE", "yes"]]]]]]
+
+# The output is printed to screen - use output redirection to save to file.
 
 import json
 import re
