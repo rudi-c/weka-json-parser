@@ -9,8 +9,8 @@ outlook = rainy
 |   windy = TRUE: no (2.0)
 |   windy = FALSE: yes (3.0)
 outlook = custom
-|   humidity = '(-inf-0.0]': no (4.0)
-|   humidity = '(0.0-5.0]': yes (1.0)
+|   humidity = '(-inf--1.0]': no (4.0)
+|   humidity = '(-1.0-5.0]': yes (1.0)
 |   humidity = '(5.0-inf)': no (2.0)
  
 Number of Leaves  :  5

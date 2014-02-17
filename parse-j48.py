@@ -18,8 +18,8 @@
 # |   windy = TRUE: no (2.0)
 # |   windy = FALSE: yes (3.0)
 # outlook = custom
-# |   humidity = '(-inf-0.0]': no (4.0)
-# |   humidity = '(0.0-5.0]': yes (1.0)
+# |   humidity = '(-inf--1.0]': no (4.0)
+# |   humidity = '(-1.0-5.0]': yes (1.0)
 # |   humidity = '(5.0-inf)': no (2.0)
 
 
@@ -33,8 +33,8 @@
 #                       [["=", "TRUE", "no"], 
 #                       ["=", "FALSE", "yes"]]]], 
 #   ["=", "custom", ["humidity", 
-#                       [["=", [-Infinity, -0.0], "no"], 
-#                       ["=", [0.0, 5.0], "yes"], 
+#                       [["=", [-Infinity, -1.0], "no"], 
+#                       ["=", [-1.0, 5.0], "yes"], 
 #                       ["=", [5.0, Infinity], "no"]]]]]]
 
 
@@ -51,9 +51,9 @@ re_blank_line = re.compile("^[ \t\n]*$")
 re_splitter = re.compile("[ :]")
 re_range = re.compile(
     "^'\(" \
-    "(-inf|[0-9]+(\.[0-9]+)?)" \
+    "(-inf|-?[0-9]+(\.[0-9]+)?)" \
     "-" \
-    "([0-9]+(\.[0-9]+)?\]|inf\))" \
+    "(-?[0-9]+(\.[0-9]+)?\]|inf\))" \
     "'$")
 
 def parse_value(token):
@@ -64,13 +64,12 @@ def parse_value(token):
     except ValueError:
         # Look for ranges of the form '(start-end]', ' included
         if re_range.match(token):
-            relevant_range = token[2:-2]
-            # -inf case, can't use split on "-"
-            if relevant_range.startswith("-inf"):
-                return (float("-inf"), parse_value(relevant_range[4:]))
-            else:
-                parts = relevant_range.split("-")
-                return (parse_value(parts[0]), parse_value(parts[1]))
+            range_str = token[2:-2]
+
+            # Careful not to use a minus sign as a dash.
+            separator_dash = range_str.find("-", 1)
+            return (parse_value(range_str[:separator_dash]), 
+                    parse_value(range_str[separator_dash+1:]))
         else:
             # Not a number or range - so it must be nominal, leave it as it.
             return token
