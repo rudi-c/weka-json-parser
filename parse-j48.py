@@ -153,14 +153,12 @@ def main(argv):
             lines = f.readlines()
             f.close()
         else:
-            print "Error : File %s not found!" % input_filename
-            sys.exit(1)
+            raise Exception("Error : File %s not found!" % input_filename)
     else:
         lines = sys.stdin.readlines()
 
     if len(lines) == 0:
-        print "Error : Empty input!"
-        sys.exit(1)
+        raise Exception("Error : Empty input!")
 
     tree_lines = get_tree_lines(lines)
     tree = parse_tree(tree_lines)
