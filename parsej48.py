@@ -92,7 +92,7 @@ def parse_line(line):
 
 
 def parse_tree(lines):
-    """Parses input lines into a Node, a recursive data structure."""
+    """Parses input lines into a decision tree."""
     current_index = [0] # need mutable container because of closure limitations
     def parse(current_depth):
         """Helper recursive function."""
@@ -129,7 +129,7 @@ def parse_tree(lines):
 
 
 def get_tree_lines(lines):
-    """Return the lines of the input that correspond to the tree."""
+    """Return the lines of the input that correspond to the decision tree."""
     tree_lines = []
     for i in range(len(lines) - 2):
         if re_head.match(lines[i]):
