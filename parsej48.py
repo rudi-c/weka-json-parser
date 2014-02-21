@@ -1,44 +1,44 @@
 #!/usr/bin/python
-# Parses the output of weka.classifiers.trees.J48
-# Made by Rudi Chen (Advecticity), 2014
-#
-# Usage : ./parse-j48.py [input_filename]
-# If no input file is given, the input will be read from stdin.
-#
-# Sample input :
+"""Parses the output of weka.classifiers.trees.J48
+Made by Rudi Chen (Advecticity), 2014
 
-# J48 pruned tree
-# ------------------
- 
-# outlook = sunny
-# |   humidity <= 75: yes (2.0)
-# |   humidity > 75: no (3.0)
-# outlook = overcast: yes (4.0)
-# outlook = rainy
-# |   windy = TRUE: no (2.0)
-# |   windy = FALSE: yes (3.0)
-# outlook = custom
-# |   humidity = '(-inf--1.0]': no (4.0)
-# |   humidity = '(-1.0-5.0]': yes (1.0)
-# |   humidity = '(5.0-inf)': no (2.0)
+Usage : ./parsej48.py [input_filename]
+If no input file is given, the input will be read from stdin.
 
+Sample input :
 
-# Sample output :
-# ["outlook", 
-#   [["=", "sunny", ["humidity", 
-#                       [["<=", "75", "yes"], 
-#                       [">", "75", "no"]]]], 
-#   ["=", "overcast", "yes"], 
-#   ["=", "rainy", ["windy", 
-#                       [["=", "TRUE", "no"], 
-#                       ["=", "FALSE", "yes"]]]], 
-#   ["=", "custom", ["humidity", 
-#                       [["=", [-Infinity, -1.0], "no"], 
-#                       ["=", [-1.0, 5.0], "yes"], 
-#                       ["=", [5.0, Infinity], "no"]]]]]]
+J48 pruned tree
+------------------
+
+outlook = sunny
+|   humidity <= 75: yes (2.0)
+|   humidity > 75: no (3.0)
+outlook = overcast: yes (4.0)
+outlook = rainy
+|   windy = TRUE: no (2.0)
+|   windy = FALSE: yes (3.0)
+outlook = custom
+|   humidity = '(-inf--1.0]': no (4.0)
+|   humidity = '(-1.0-5.0]': yes (1.0)
+|   humidity = '(5.0-inf)': no (2.0)
 
 
-# The output is printed to screen - use output redirection to save to file.
+Sample output :
+["outlook", 
+  [["=", "sunny", ["humidity", 
+                      [["<=", "75", "yes"], 
+                      [">", "75", "no"]]]], 
+  ["=", "overcast", "yes"], 
+  ["=", "rainy", ["windy", 
+                      [["=", "TRUE", "no"], 
+                      ["=", "FALSE", "yes"]]]], 
+  ["=", "custom", ["humidity", 
+                      [["=", [-Infinity, -1.0], "no"], 
+                      ["=", [-1.0, 5.0], "yes"], 
+                      ["=", [5.0, Infinity], "no"]]]]]]
+
+The output is printed to screen - use output redirection to save to file.
+"""
 
 import json
 import re
@@ -50,11 +50,11 @@ re_divider_line = re.compile("^-*\n$")
 re_blank_line = re.compile("^[ \t\n]*$")
 re_splitter = re.compile("[ :]")
 re_range = re.compile(
-    "^'\(" \
-    "(-inf|-?[0-9]+(\.[0-9]+)?)" \
-    "-" \
-    "(-?[0-9]+(\.[0-9]+)?\]|inf\))" \
-    "'$")
+    r"^'\("
+    r"(-inf|-?[0-9]+(\.[0-9]+)?)"
+    r"-"
+    r"(-?[0-9]+(\.[0-9]+)?\]|inf\))"
+    r"'$")
 
 def parse_value(token):
     """Returns an float if the token represents a number, a range if the token
@@ -95,6 +95,7 @@ def parse_tree(lines):
     """Parses input lines into a Node, a recursive data structure."""
     current_index = [0] # need mutable container because of closure limitations
     def parse(current_depth):
+        """Helper recursive function."""
         node_feature = None
         children = []
         while current_index[0] < len(lines):
@@ -107,9 +108,9 @@ def parse_tree(lines):
                 if node_feature is None:
                     node_feature = feature
                 elif node_feature != feature:
-                    raise Exception("Error : Feature mismatch - expected %s" \
-                        "but got : \n%s" \
-                          % (node_feature, line))
+                    raise Exception("Error : Feature mismatch - expected %s"
+                        "but got : \n%s"
+                        % (node_feature, line))
 
                 # Another branch
                 current_index[0] += 1
@@ -119,7 +120,7 @@ def parse_tree(lines):
                 else:
                     children.append((comparator, value, classif))
             else:
-                raise Exception("Error : Input jumps two levels at once\n%s." \
+                raise Exception("Error : Input jumps two levels at once\n%s."
                                 % line)
 
         return (node_feature, children)
@@ -130,11 +131,11 @@ def parse_tree(lines):
 def get_tree_lines(lines):
     """Return the lines of the input that correspond to the tree."""
     tree_lines = []
-    for i in range(0, len(lines) - 2):
+    for i in range(len(lines) - 2):
         if re_head.match(lines[i]):
-            assert re_divider_line.match(lines[i + 1]) and \
-                   re_blank_line.match(lines[i + 2]), \
-                   "Input not in expected format."
+            assert (re_divider_line.match(lines[i + 1]) and
+                    re_blank_line.match(lines[i + 2])), \
+                    "Input not in expected format."
             for l in lines[i+3:]:
                 if re_blank_line.match(l):
                     return tree_lines
@@ -145,8 +146,7 @@ def get_tree_lines(lines):
 
 
 def main(argv):
-
-    if len(argv) > 0:
+    if argv:
         input_filename = argv[0]
         if os.path.isfile(input_filename):
             f = open(input_filename)
@@ -157,7 +157,7 @@ def main(argv):
     else:
         lines = sys.stdin.readlines()
 
-    if len(lines) == 0:
+    if not lines:
         raise Exception("Error : Empty input!")
 
     tree_lines = get_tree_lines(lines)
